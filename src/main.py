@@ -1,7 +1,8 @@
+import os
 import sys
+import math
 import random
 import threading
-import math
 
 from PyQt5.QtWidgets import * 
 from PyQt5.QtGui import * 
@@ -25,44 +26,33 @@ class Window(QMainWindow):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.speed = 200
+        self.folder_path = "res/images"
         self.is_left = False
 
-        self.venom_black_stance = QMovie('res/venom-blackstance.gif')
-        self.venom_black_stance_left = QMovie('res/venom-blackstance-left.gif')
-        self.venom_black_walk = QMovie('res/venom-blackwalk.gif')
-        self.venom_black_walk_left = QMovie('res/venom-blackwalk-left.gif')
+        self.venom_black_stance = QMovie('res/venom/venom-blackstance.gif')
+        self.venom_black_stance_left = QMovie('res/venom/venom-blackstance-left.gif')
+        self.venom_black_walk = QMovie('res/venom/venom-blackwalk.gif')
+        self.venom_black_walk_left = QMovie('res/venom/venom-blackwalk-left.gif')
+        self.venom_hkrepeat = QMovie('res/venom/venom-hkrepeat.gif')
         
+        self.cross = QPixmap('res/other/cross.png')
+
         self.venommm = QSoundEffect()
-        self.venommm.setSource(QUrl.fromLocalFile("res/music/venommm.wav"))
+        self.venommm.setSource(QUrl.fromLocalFile("res/sound/venommm.wav"))
+        self.your_world = QSoundEffect()
+        self.your_world.setSource(QUrl.fromLocalFile("res/sound/your-world-is-not-so-ugly-after-all.wav"))
 
         self.UiComponents()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.move_player)
         self.timer.start(random.randint(2000, 5000))
+        
+        self.show_meme_timer = QTimer(self)
+        self.show_meme_timer.timeout.connect(self.show_meme)
+        self.show_meme_timer.start(random.randint(13000, 20000))
 
         self.show()
-
-    def all_timer(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.move_player)
-        self.timer.start(random.randint(1200, 4000))
-        
-        self.sania_random_choice = random.choice([self.sania_ult_1, self.sania_ult_2])
-        self.stas_random_choice = random.choice([self.stas_ult_1, self.stas_ult_2, self.stas_ult_3])
-        self.misha_random_choice = random.choice([self.misha_ult_1, self.misha_ult_2])
-
-        self.ult_timer = QTimer(self)
-        if self.player_chose == 'sania':
-            self.ult_timer.timeout.connect(self.sania_random_choice)
-        elif self.player_chose == 'stas':
-            self.ult_timer.timeout.connect(self.stas_random_choice)
-        elif self.player_chose == 'misha':
-            self.ult_timer.timeout.connect(self.misha_random_choice)
-        elif self.player_chose == 'kolia':
-            self.ult_timer.timeout.connect(self.kolia_ult_1)
-
-        self.ult_timer.start(random.randint(8000, 25000))
 
     def finish_walk(self):
         self.timer.start(random.randint(0, 6000))
@@ -86,13 +76,15 @@ class Window(QMainWindow):
         return wrapper
 
     def UiComponents(self):
+        self.meme_label = QLabel(self)
         self.player = QLabel(self)
+        self.cross_label = QLabel(self)
         
         self.venommm.setVolume(0.1)
         self.venommm.play()
 
         self.player.setMovie(self.venom_black_stance)
-        self.player.setMinimumSize(QSize(150, 120))
+        self.player.setMinimumSize(QSize(250, 185))
         self.player.setMaximumSize(QSize(200, 200))
 
         self.venom_black_stance.start()
@@ -113,12 +105,12 @@ class Window(QMainWindow):
         
         if self.player.x() >= new_x:
             self.venom_black_stance.stop()
-            self.venom_black_walk_left.stop()
+            self.venom_black_stance_left.stop()
             self.player.setMovie(self.venom_black_walk_left)
             self.venom_black_walk_left.start()
             self.is_left = True
         else:
-            self.venom_black_walk_left.stop()
+            self.venom_black_stance_left.stop()
             self.venom_black_stance.stop()
             self.player.setMovie(self.venom_black_walk)
             self.venom_black_walk.start()
@@ -140,9 +132,76 @@ class Window(QMainWindow):
 
         self.animation.finished.connect(self.finish_walk)
 
+    def show_meme(self):
+        self.timer.stop()
+        self.venom_black_stance_left.stop()
+        self.venom_black_stance.stop()
+        self.venom_black_walk.stop()
+        self.venom_black_walk_left.stop()
+
+        try:
+            self.animation.stop()
+        except:
+            pass
+
+        self.player.setMovie(self.venom_hkrepeat)
+        self.venom_hkrepeat.start()
+
+        self.your_world.play()
+
+        image_files = [file for file in os.listdir(self.folder_path)]
+
+        random_image = random.choice(image_files)
+        image_path = os.path.join(self.folder_path, random_image)
+
+        meme = QPixmap(image_path)
+
+        self.meme_label.setPixmap(meme)
+
+        self.meme_label.setGeometry(random.randint(0, self.width()-meme.width()),
+                                    random.randint(0, self.height()-meme.height()),
+                                    meme.width(),
+                                    meme.height())
+
+        self.opacity_effect = QGraphicsOpacityEffect()
+        self.meme_label.setGraphicsEffect(self.opacity_effect)
+
+        self.show_meme = QPropertyAnimation(self.opacity_effect, b'opacity')
+        self.show_meme.setStartValue(0)
+        self.show_meme.setEndValue(1)
+        self.show_meme.setDuration(4000)
+        self.show_meme.start()
+        self.meme_label.lower()
+        
+        self.layout().addWidget(self.meme_label)
+        
+        self.show_meme_stop = QTimer(self)
+        self.show_meme_stop.timeout.connect(self.continue_show_meme)
+        self.show_meme_stop.start(3500)
+    
+    def continue_show_meme(self):
+        self.show_meme_stop.stop()
+        self.venom_hkrepeat.stop()
+        
+        self.cross_label.setPixmap(self.cross)
+        
+        self.cross_label.resize(self.cross.width(),
+                                self.cross.height())
+        # self.cross_label.raise_()
+        
+        self.cross_label.move(self.meme_label.x(),
+                              self.meme_label.width() - self.cross_label.x() / 2)
+        
+        self.player.setMovie(self.venom_black_stance)
+        self.venom_black_stance.start()
+
+        self.timer.start(random.randint(2000, 5000))
+        self.show_meme_timer.start(random.randint(10000, 20000))
+        
+
+
 
 App = QApplication(sys.argv)
 
 window = Window()
 sys.exit(App.exec())
-
