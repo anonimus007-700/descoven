@@ -47,12 +47,13 @@ class Window(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.move_player)
         self.timer.start(random.randint(2000, 5000))
-        
+
         self.show_meme_timer = QTimer(self)
         self.show_meme_timer.timeout.connect(self.show_meme)
         self.show_meme_timer.start(random.randint(13000, 20000))
 
         self.show()
+        # self.show_meme()
 
     def finish_walk(self):
         self.timer.start(random.randint(0, 6000))
@@ -78,7 +79,15 @@ class Window(QMainWindow):
     def UiComponents(self):
         self.meme_label = QLabel(self)
         self.player = QLabel(self)
-        self.cross_label = QLabel(self)
+        self.cross_but = QPushButton(self)
+        
+        self.cross_but.setStyleSheet("background-color: transparent; border: none;")
+        
+        self.opacity_effect_cross = QGraphicsOpacityEffect()
+        self.cross_but.setGraphicsEffect(self.opacity_effect_cross)
+        
+        self.opacity_effect = QGraphicsOpacityEffect()
+        self.meme_label.setGraphicsEffect(self.opacity_effect)
         
         self.venommm.setVolume(0.1)
         self.venommm.play()
@@ -134,6 +143,7 @@ class Window(QMainWindow):
 
     def show_meme(self):
         self.timer.stop()
+        self.show_meme_timer.stop()
         self.venom_black_stance_left.stop()
         self.venom_black_stance.stop()
         self.venom_black_walk.stop()
@@ -163,13 +173,10 @@ class Window(QMainWindow):
                                     meme.width(),
                                     meme.height())
 
-        self.opacity_effect = QGraphicsOpacityEffect()
-        self.meme_label.setGraphicsEffect(self.opacity_effect)
-
         self.show_meme = QPropertyAnimation(self.opacity_effect, b'opacity')
         self.show_meme.setStartValue(0)
         self.show_meme.setEndValue(1)
-        self.show_meme.setDuration(4000)
+        self.show_meme.setDuration(3500)
         self.show_meme.start()
         self.meme_label.lower()
         
@@ -177,25 +184,47 @@ class Window(QMainWindow):
         
         self.show_meme_stop = QTimer(self)
         self.show_meme_stop.timeout.connect(self.continue_show_meme)
-        self.show_meme_stop.start(3500)
+        self.show_meme_stop.start(3700)
     
     def continue_show_meme(self):
         self.show_meme_stop.stop()
         self.venom_hkrepeat.stop()
         
-        self.cross_label.setPixmap(self.cross)
+        self.cross_but.setIcon(QIcon(self.cross))
         
-        self.cross_label.resize(self.cross.width(),
-                                self.cross.height())
-        # self.cross_label.raise_()
+        self.opacity_effect_cross.setOpacity(1)
         
-        self.cross_label.move(self.meme_label.x(),
-                              self.meme_label.width() - self.cross_label.x() / 2)
+        self.cross_but.resize(self.cross.width(),
+                              self.cross.height())
         
+        self.cross_but.move(self.meme_label.x(),
+                            self.meme_label.y())
+        
+        self.cross_but.clicked.connect(self.cross_click)
+
+        self.player.raise_()
         self.player.setMovie(self.venom_black_stance)
         self.venom_black_stance.start()
-
+        
         self.timer.start(random.randint(2000, 5000))
+
+    def cross_click(self):
+        self.close_meme = QPropertyAnimation(self.opacity_effect, b'opacity')
+        self.close_meme.setStartValue(1)
+        self.close_meme.setEndValue(0)
+        self.close_meme.setDuration(2000)
+
+        self.close_meme_cross = QPropertyAnimation(self.opacity_effect_cross, b'opacity')
+        self.close_meme_cross.setStartValue(1)
+        self.close_meme_cross.setEndValue(0)
+        self.close_meme_cross.setDuration(2000)
+        
+        self.group = QParallelAnimationGroup()
+        self.group.addAnimation(self.close_meme)
+        self.group.addAnimation(self.close_meme_cross)
+
+        self.group.start()
+
         self.show_meme_timer.start(random.randint(10000, 20000))
         
 
